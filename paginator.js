@@ -236,7 +236,12 @@ class View {
         Object.assign(this.#iframe.style, {
             overflow: 'hidden',
             border: '0',
-            display: 'none',
+            // don't use `display: none`: loading content while the iframe is
+            // not laid out makes WebKitGTK compute layout metrics with a wrong
+            // scale factor when the iframe is shown, e.g. text appearing
+            // ~devicePixelRatio times larger (and lines/layout all scrambled)
+            display: 'block',
+            visibility: 'hidden',
             width: '100%', height: '100%',
         })
         // `allow-scripts` is needed for events because of WebKit bug
@@ -257,18 +262,15 @@ class View {
                 const doc = this.document
                 afterLoad?.(doc)
 
-                // it needs to be visible for Firefox to get computed style
-                this.#iframe.style.display = 'block'
                 const { vertical, rtl } = getDirection(doc)
                 const background = getBackground(doc)
-                this.#iframe.style.display = 'none'
 
                 this.#vertical = vertical
                 this.#rtl = rtl
 
                 this.#contentRange.selectNodeContents(doc.body)
                 const layout = beforeRender?.({ vertical, rtl, background })
-                this.#iframe.style.display = 'block'
+                this.#iframe.style.visibility = 'visible'
                 this.render(layout)
                 this.#observer.observe(doc.body)
 
